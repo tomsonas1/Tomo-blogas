@@ -284,6 +284,13 @@ def contact():
         return redirect(url_for('contact'))
     return render_template('contact.html', form=form)
 
+@app.route('/emails')
+@admin_only
+def all_emails():
+    result = db.session.execute(db.select(ReceivedEmails).order_by(desc(ReceivedEmails.date)))
+    emails = result.scalars().all()
+    return render_template('emails.html', emails=emails, current_user=current_user)
+
 
 if __name__ == "__main__":
     app.run(debug=False)

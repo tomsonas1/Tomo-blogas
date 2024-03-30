@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header-->
+        <header class="masthead" style="background-image: url('static/assets/img/posts.jpg')">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="site-heading">
+                            <h1>Gauti el. pašto laiškai</h1>
+                            <span class="subheading"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Main Content-->
+
+        <div class="container px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center">
+                <div class="col-md-10 col-lg-8 col-xl-7">
+                    <!-- Post preview-->
+                    {% for email in emails %}
+                    <div class="post-preview">
+                        <h3 class="post-title"> Siuntėjas: {{ email.name }}</h3>
+                        <h4 class="post-subtitle">El. paštas: {{ email.email }}</h4>
+                        <h4 class="post-subtitle">Telefonas: {{ email.phone }}</h4>
+                        <h4 class="post-subtitle">Gavimo data: {{ email.date }}</h4>
+                        <br>
+                        <p>{{ email.text }}</p>
+                         <hr class="my-4" />
+                    </div>
+                    {% endfor %}
+                    <!-- Divider-->
+
+
+
+
+                </div>
+            </div>
+        </div>
+
+
+{% endblock content%}
