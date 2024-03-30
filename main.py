@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
 from sqlalchemy import Integer, String, Text, desc
 from flask_ckeditor import CKEditor
-from datetime import date
+from datetime import date, datetime
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
@@ -24,6 +24,7 @@ sender_email = os.environ.get('SENDER_EMAIL')
 email_password = os.environ.get('EMAIL_PASSWORD')
 receiver_email = os.environ.get('RECEIVER_EMAIL')
 smtp_server = os.environ.get('SMTP_SERVER')
+
 
 ##-----------------------------End Email Config--------------------------------------##
 @login_manager.user_loader
@@ -74,6 +75,17 @@ class Comment(db.Model):
     parent_post = relationship("BlogPost", back_populates="comments")
 
 
+class ReceivedEmails(db.Model):
+    __tablename__ = "emails"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    phone: Mapped[str] = mapped_column(String(100), nullable=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    date: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+
 with app.app_context():
     db.create_all()
 
@@ -88,6 +100,7 @@ def admin_only(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
 
 def logged_only(f):
     @wraps(f)
@@ -193,6 +206,7 @@ def write_comment(post_id):
     return render_template('write-comment.html', post=request_post, current_user=current_user,
                            form=comment_form)
 
+
 @app.route('/delete/<int:comment_id>/<int:post_id>')
 @logged_only
 def delete_comment(comment_id, post_id):
@@ -200,7 +214,6 @@ def delete_comment(comment_id, post_id):
     db.session.delete(comment_to_delete)
     db.session.commit()
     return redirect(url_for('show_post', post_id=post_id))
-
 
 
 @app.route('/add-post', methods=['GET', 'POST'])
@@ -220,7 +233,6 @@ def add_new_post():
         db.session.commit()
         return redirect(url_for('all_posts'))
     return render_template('make-post.html', form=form, current_user=current_user)
-
 
 
 @app.route('/edit-post/<int:post_id>', methods=["GET", "POST"])
@@ -255,25 +267,21 @@ def delete_post(post_id):
     return redirect(url_for('all_posts'))
 
 
-
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
     form = ContactMeForm()
     if form.validate_on_submit():
-        name = form.name.data
-        email = form.email.data
-        phone = form.phone.data
-        message = form.message.data
-        with smtplib.SMTP(smtp_server)as connection:
-            connection.starttls()
-            connection.login(user=sender_email, password=email_password)
-            msg = (f"Subject: Žinutė nuo {name}\n\n {message}\n Siuntėjo vardas: {name}\n Siuntėjo telefonas: {phone}\n "
-                   f"Siuntėjo El. paštas: {email}").encode('utf-8')
-            connection.sendmail(from_addr=sender_email, to_addrs=receiver_email, msg=msg)
-            answer = (f"Subject: Jūsų žinutė gauta\n\n Gerb {name}, \n Jūsų žinutė gauta. su jumis susisieksime artimiausiu metu.").encode('utf-8')
-            connection.sendmail(from_addr=sender_email, to_addrs=email, msg=answer)
-            flash("Jūsų žinutė sįkmingai išsiūsta")
-            return redirect(url_for('contact'))
+        new_email = ReceivedEmails(
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            text=form.message.data,
+            date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+        db.session.add(new_email)
+        db.session.commit()
+        flash("Jūsų žinutė sįkmingai išsiūsta")
+        return redirect(url_for('contact'))
     return render_template('contact.html', form=form)
 
 
